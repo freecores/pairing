@@ -1,6 +1,51 @@
 `include "inc.v"
 `define MOST 2*`M+1:2*`M
 
+// out = (v1 & l1) | (v2 & l2)
+module f3m_mux2(v1, l1, v2, l2, out);
+    input [`WIDTH:0] v1, v2;
+    input l1, l2;
+    output [`WIDTH:0] out;
+    genvar i;
+    generate
+        for(i=0;i<=`WIDTH;i=i+1)
+          begin : label
+            assign out[i] = (v1[i] & l1) | (v2[i] & l2);
+          end 
+    endgenerate
+endmodule
+
+// out = (v1 & l1) | (v2 & l2) | (v3 & l3)
+module f3m_mux3(v1, l1, v2, l2, v3, l3, out);
+    input [`WIDTH:0] v1, v2, v3;
+    input l1, l2, l3;
+    output [`WIDTH:0] out;
+    genvar i;
+    generate
+        for(i=0;i<=`WIDTH;i=i+1)
+          begin : label
+            assign out[i] = (v1[i] & l1) | (v2[i] & l2) | (v3[i] & l3);
+          end 
+    endgenerate
+endmodule
+
+// out = (v0 & l0) | (v1 & l1) | (v2 & l2) | ... | (v5 & l5)
+module f3m_mux6(v0, v1, v2, v3, v4, v5, l0, l1, l2, l3, l4, l5, out);
+    input l0, l1, l2, l3, l4, l5;
+    input [`WIDTH:0] v0, v1, v2, v3, v4, v5;
+    output reg [`WIDTH:0] out;
+    always @ (l0,l1,l2,l3,l4,l5,v0,v1,v2,v3,v4,v5)
+      case ({l0,l1,l2,l3,l4,l5})
+        6'b100000: out = v0;
+        6'b010000: out = v1;
+        6'b001000: out = v2;
+        6'b000100: out = v3;
+        6'b000010: out = v4;
+        6'b000001: out = v5;
+        default: out = 0;
+      endcase
+endmodule
+
 // f3m_add: C = A + B, in field F_{3^M}
 module f3m_add(A, B, C);
     input [`WIDTH : 0] A, B;
@@ -11,6 +56,27 @@ module f3m_add(A, B, C);
             f3_add aa(A[(2*i+1) : 2*i], B[(2*i+1) : 2*i], C[(2*i+1) : 2*i]);
         end
     endgenerate
+endmodule
+
+// f3m_add3: c == a0+a1+a2, in field GF(3^M)
+module f3m_add3(a0, a1, a2, c);
+    input [`WIDTH:0] a0,a1,a2;
+    output [`WIDTH:0] c;
+    wire [`WIDTH:0] v;
+    f3m_add
+        ins1 (a0,a1,v), // v == a0+a1
+        ins2 (v,a2,c);  // c == v+a2 == a0+a1+a2
+endmodule
+
+// f3m_add4: c == a0+a1+a2+a3, in field GF(3^M)
+module f3m_add4(a0, a1, a2, a3, c);
+    input [`WIDTH:0] a0,a1,a2,a3;
+    output [`WIDTH:0] c;
+    wire [`WIDTH:0] v1,v2;
+    f3m_add
+        ins1 (a0,a1,v1), // v1 == a0+a1
+        ins2 (a2,a3,v2), // v2 == a2+a3
+        ins3 (v1,v2,c);  // c == v1+v2 == a0+a1+a2+a3
 endmodule
 
 // f3m_neg: c == -a in GF(3^M)
@@ -439,3 +505,66 @@ module f3m_inv(clk, reset, A, C);
       end
 endmodule
 
+// put func1~5 here for breaking circular dependency in "f3m", "fun"
+
+// out = S - q*R
+module func1(S, R, q, out);
+    input [`WIDTH+2:0] S, R;
+    input [1:0] q;
+    output [`WIDTH+2:0] out;
+    wire [`WIDTH+2:0] t;
+    func4 f(R, q, t); // t == q*R
+    genvar i;
+    generate for(i=0; i<=`WIDTH+2; i=i+2) begin: label
+        f3_sub s1(S[i+1:i], t[i+1:i], out[i+1:i]); // out == S - t
+    end endgenerate
+endmodule
+
+// out = x*A
+module func2(A, out);
+    input [`WIDTH+2:0] A;
+    output [`WIDTH+2:0] out;
+    assign out = {A[`WIDTH:0], 2'd0};
+endmodule
+
+// C = (x*B mod p(x))
+module func3(B, C);
+    input [`WIDTH+2:0] B;
+    output [`WIDTH+2:0] C;
+    wire [`WIDTH+2:0] A;
+    assign A = {B[`WIDTH:0], 2'd0}; // A == B*x
+    wire [1:0] w0;
+    f3_mult m0 (A[195:194], 2'd2, w0);
+    f3_sub s0 (A[1:0], w0, C[1:0]);
+    assign C[23:2] = A[23:2];
+    wire [1:0] w12;
+    f3_mult m12 (A[195:194], 2'd1, w12);
+    f3_sub s12 (A[25:24], w12, C[25:24]);
+    assign C[193:26] = A[193:26];
+    assign C[195:194] = 0;
+endmodule
+
+// C = a * A; A,C \in GF(3^m); a \in GF(3)
+module func4(A, aa, C);
+    input [`WIDTH+2:0] A;
+    input [1:0] aa;
+    output [`WIDTH+2:0] C;
+    genvar i;
+    generate
+      for(i=0; i<=`WIDTH+2; i=i+2) 
+      begin: label
+        f3_mult m(A[i+1:i], aa, C[i+1:i]);
+      end 
+    endgenerate
+endmodule
+
+// C = (A/x) mod p, \in GF(3^m)
+module func5(A, C);
+    input [`WIDTH+2:0] A;
+    output [`WIDTH+2:0] C;
+    assign C[195:194] = 0;
+    assign C[193:192] = A[1:0];
+    assign C[191:24] = A[193:26];
+    f3_add a11 (A[25:24], A[1:0], C[23:22]);
+    assign C[21:0] = A[23:2];
+endmodule
