@@ -122,3 +122,6 @@ module f33m_mult(clk, reset, a, b, c, done);
       end
 endmodule
 
+// c == a^{-1} in GF(3^{3*M})
+
+

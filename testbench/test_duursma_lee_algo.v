@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`timescale 1ns / 1ns
 `include "../verilog/inc.v"
 
 module test_duursma_lee_algo;
