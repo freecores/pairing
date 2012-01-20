@@ -154,6 +154,60 @@ module f3m_mult(clk, reset, A, B, C, done);
       end
 endmodule
 
+// c0 == a0*b0; c1 == a1*b1; c2 == a2*b2; all in GF(3^M)
+module f3m_mult3(clk, reset, 
+                 a0, b0, c0,
+                 a1, b1, c1, 
+                 a2, b2, c2, 
+                 done);
+    input clk, reset;
+    input [`WIDTH:0] a0, b0, a1, b1, a2, b2;
+    output reg [`WIDTH:0] c0, c1, c2;
+    output reg done;
+    reg [3:0] K;
+    reg mult_reset, delay1, delay2;
+    wire e1, e2, e3, mult_done, delay3, rst;
+    wire [`WIDTH:0] in1, in2, o;
+    
+    assign rst = delay2;
+    assign {e1,e2,e3} = K[3:1];
+
+    f3m_mux3
+        ins9 (a0, e1, a1, e2, a2, e3, in1),
+        ins10 (b0, e1, b1, e2, b2, e3, in2);
+    f3m_mult
+        ins11 (clk, mult_reset, in1, in2, o, mult_done); // o == in1 * in2 in GF(3^m)
+    func6
+        ins12 (clk, mult_done, delay3);
+
+    always @ (posedge clk)
+      begin
+        if (e1) c0 <= o;
+        if (e2) c1 <= o;
+        if (e3) c2 <= o;
+      end
+    
+    always @ (posedge clk)
+        if (reset) K <= 4'b1000;
+        else if (delay3) K <= {1'b0,K[3:1]};
+    
+    always @ (posedge clk)
+      begin
+        if (rst) mult_reset <= 1;
+        else if (mult_done) mult_reset <= 1;
+        else mult_reset <= 0;
+      end
+
+    always @ (posedge clk)
+        if (reset)     done <= 0;
+        else if (K[0]) done <= 1;
+    
+    always @ (posedge clk)
+      begin 
+        delay2 <= delay1; delay1 <= reset; 
+      end
+endmodule
+
 /* out == in^3 mod p(x) */
 /* p(x) == x^97 + x^12 + 2 */
 module f3m_cubic(input [193:0] in, output [193:0] out);
@@ -431,11 +485,12 @@ module f3m_nine(clk, in, out);
 endmodule
 
 // inversion in GF(3^m). C = A^(-1)
-module f3m_inv(clk, reset, A, C);
+module f3m_inv(clk, reset, A, C, done);
 	input [`WIDTH:0] A;
 	input clk;
 	input reset;
 	output reg [`WIDTH:0] C;
+    output reg done;
 	
 	reg [`WIDTH+2:0] S, R, U, V, d, i;
 	wire [1:0] q;
@@ -445,17 +500,19 @@ module f3m_inv(clk, reset, A, C);
 	                  V1, V2,
 	                  d1, d2,
                       i1;
-	wire done;
+	wire don;
 
 	assign d1 = {d[`WIDTH+1:0], 1'b1}; // d1 == d+1
 	assign d2 = {1'b0, d[`WIDTH+2:1]}; // d2 == d-1
     assign i1 = {1'b0, i[`WIDTH+2:1]}; // i1 == i-1
-	assign done = (i[2:1] == 2'b01);
+	assign don = (i[2:1] == 2'b01);
 	
-	always @ (posedge clk) 
-	    if (done)
+	always @ (posedge clk)
+        if (reset)
+            done <= 0;
+	    else if (don)
           begin
-	        C <= U2[`WIDTH:0];
+	        done <= 1; C <= U2[`WIDTH:0];
           end
 
 	f3_mult 
@@ -475,17 +532,12 @@ module f3m_inv(clk, reset, A, C);
         ins8(U, U3); // U3 = (U/x) mod p
     
     always @ (posedge clk) 
-      begin
         if (reset)
             i <= ~0;
         else
-          begin
             i <= i1;
-          end
-      end
     
     always @ (posedge clk)
-      begin
         if (reset) 
           begin
             S<=`PX; R<=A; U<=1; V<=0; d<=0;
@@ -502,7 +554,6 @@ module f3m_inv(clk, reset, A, C);
           begin
             S<=S2; V<=V1; U<=U3; d<=d2;
           end
-      end
 endmodule
 
 // put func1~5 here for breaking circular dependency in "f3m", "fun"

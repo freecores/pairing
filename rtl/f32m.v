@@ -70,24 +70,13 @@ module f32m_mult(clk, reset, a, b, c, done);
     input [`W2:0] a, b;
     output reg [`W2:0] c;
     output reg done;
-    wire [`WIDTH:0] a0,a1,b0,b1,
-                    v1,v2,v6,
-                    c0,c1,
-                    in1,in2,o;
-    reg [`WIDTH:0] v3,v4,v5;
-    reg [3:0] K;
-    wire load1, load2, load3, set1, set2, set3;
+    wire [`WIDTH:0] a0,a1,b0,b1,c0,c1,
+                    v1,v2,v3,v4,v5,v6;
     reg mult_reset;
-    wire mult_done;
-    reg delay1, delay2;
-    wire delay3;
-    wire rst;
+    wire mult_done, p;
     
-    assign rst = delay2;
     assign {a1,a0} = a;
     assign {b1,b0} = b;
-    assign {load1,load2,load3} = K[3:1];
-    assign {set1,set2,set3} = K[3:1];
 
     f3m_add
         ins1 (a0, a1, v1), // v1 == a0 + a1
@@ -96,50 +85,24 @@ module f32m_mult(clk, reset, a, b, c, done);
     f3m_sub
         ins7 (v5, v6, c1), // c1 == v5 - v6 = (a0+a1) * (b0+b1) - (a0*b0 + a1*b1)
         ins8 (v3, v4, c0); // c0 == a0*b0 - a1*b1
-    // only one $f3m_mult$ module doing three multiplication
     // v3 == a0 * b0
     // v4 == a1 * b1
     // v5 == v1 * v2 = (a0+a1) * (b0+b1)
-    f3m_mux3
-        ins9 (a0, load1, a1, load2, v1, load3, in1),
-        ins10 (b0, load1, b1, load2, v2, load3, in2);
-    f3m_mult
-        ins11 (clk, mult_reset, in1, in2, o, mult_done); // o == in1 * in2 in GF(3^m)
+    f3m_mult3 
+        ins9 (clk, mult_reset, a0, b0, v3, a1, b1, v4, v1, v2, v5, mult_done);
     func6
-        ins12 (clk, mult_done, delay3);
+        ins10 (clk, mult_done, p);
     
     always @ (posedge clk)
-      begin
-        if (set1) begin v3 <= o; end
-        if (set2) begin v4 <= o; end
-        if (set3) begin v5 <= o; end
-      end
-    
-    always @ (posedge clk)
-      begin
-        if (reset) K <= 4'b1000;
-        else if (delay3) K <= {1'b0,K[3:1]}; // wait for Mr. Comb. Logic :)
-      end
-    
-    always @ (posedge clk)
-      begin
-        if (rst) mult_reset <= 1; // wait for Mr. Comb. Logic :)
-        else if (mult_done) mult_reset <= 1;
-        else mult_reset <= 0;
-      end
+        mult_reset <= reset;
 
     always @ (posedge clk)
-      if (reset)
-        done <= 0;
-      else if (K[0])
-        begin
-          done <= 1; c <= {c1, c0};
-        end
-    
-    always @ (posedge clk)
-      begin
-        delay2 <= delay1; delay1 <= reset;
-      end
+        if (reset)
+            done <= 0;
+        else if (p)
+          begin
+            done <= 1; c <= {c1, c0};
+          end
 endmodule
 
 // C == A^3 in GF(3^{2m})

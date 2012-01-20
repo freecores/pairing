@@ -1,5 +1,5 @@
 `timescale 1ns / 1ns
-`include "../verilog/inc.v"
+`include "../rtl/inc.v"
 
 module test_f36m_cubic;
 

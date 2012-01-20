@@ -9,13 +9,15 @@ module test_f3m_inv;
 
 	// Outputs
 	wire [193:0] C;
+    wire done;
 
 	// Instantiate the Unit Under Test (UUT)
 	f3m_inv uut (
 		.A(A), 
 		.clk(clk), 
 		.reset(reset), 
-		.C(C)
+		.C(C),
+        .done(done)
 	);
 
     always #`CLOCK_PERIOD clk = ~clk;
@@ -33,9 +35,8 @@ module test_f3m_inv;
         A = 32'b10_01_01_10_01_00; // A = "x";
         @(negedge clk); reset = 1;
         @(negedge clk); reset = 0;
-        $display("Go!");
         #(200*2*`CLOCK_PERIOD);
-        if (C != 192'h65450169824811252a919a8a02964184221a1562655252a9) begin $display("Error!"); $finish; end
+        if (C != 192'h65450169824811252a919a8a02964184221a1562655252a9) $display("Error!");
         $display("Good!"); $finish;
 	end
       
