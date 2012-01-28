@@ -55,7 +55,7 @@ module test_f3m_mult3;
         @ (negedge clk); reset = 1;
         @ (negedge clk); reset = 0;
         @ (posedge done);
-        #10;
+        #5;
         if (c0 !== w0) $display("E");
         if (c1 !== w1) $display("E");
         if (c2 !== w2) $display("E");

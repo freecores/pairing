@@ -91,7 +91,7 @@ module f32m_mult(clk, reset, a, b, c, done);
     f3m_mult3 
         ins9 (clk, mult_reset, a0, b0, v3, a1, b1, v4, v1, v2, v5, mult_done);
     func6
-        ins10 (clk, mult_done, p);
+        ins10 (clk, reset, mult_done, p);
     
     always @ (posedge clk)
         mult_reset <= reset;

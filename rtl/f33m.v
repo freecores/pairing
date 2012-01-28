@@ -1,5 +1,33 @@
 `include "inc.v"
 
+// out = (v1 & l1) | (v2 & l2)
+module f33m_mux2(v1, l1, v2, l2, out);
+    input [`W3:0] v1, v2;
+    input l1, l2;
+    output [`W3:0] out;
+    genvar i;
+    generate
+        for(i=0;i<=`W3;i=i+1)
+          begin : label
+            assign out[i] = (v1[i] & l1) | (v2[i] & l2);
+          end 
+    endgenerate
+endmodule
+
+// out = (v1 & l1) | (v2 & l2) | (v3 & l3)
+module f33m_mux3(v1, l1, v2, l2, v3, l3, out);
+    input [`W3:0] v1, v2, v3;
+    input l1, l2, l3;
+    output [`W3:0] out;
+    genvar i;
+    generate
+        for(i=0;i<=`W3;i=i+1)
+          begin : label
+            assign out[i] = (v1[i] & l1) | (v2[i] & l2) | (v3[i] & l3);
+          end 
+    endgenerate
+endmodule
+
 // c == a+b in GF(3^{3*M})
 module f33m_add(a, b, c);
     input [`W3:0] a,b;
@@ -14,18 +42,17 @@ module f33m_add(a, b, c);
         ins3 (a2,b2,c2);
 endmodule
 
-// c == a-b in GF(3^{3*M})
-module f33m_sub(a, b, c);
-    input [`W3:0] a,b;
+// c == -a in GF(3^{3*M})
+module f33m_neg(a, c);
+    input [`W3:0] a;
     output [`W3:0] c;
-    wire [`WIDTH:0] a0,a1,a2,b0,b1,b2,c0,c1,c2;
+    wire [`WIDTH:0] a0,a1,a2,c0,c1,c2;
     assign {a2,a1,a0} = a;
-    assign {b2,b1,b0} = b;
     assign c = {c2,c1,c0};
-    f3m_sub
-        ins1 (a0,b0,c0),
-        ins2 (a1,b1,c1),
-        ins3 (a2,b2,c2);
+    f3m_neg
+        ins1 (a0,c0),
+        ins2 (a1,c1),
+        ins3 (a2,c2);
 endmodule
 
 // c == a*b in GF(3^{3*M})
@@ -63,7 +90,7 @@ module f33m_mult(clk, reset, a, b, c, done);
     f3m_mult
         ins3 (clk, mult_reset, in0, in1, o, mult_done); // o == in0 * in1
     func6
-        ins4 (clk, mult_done, p);
+        ins4 (clk, reset, mult_done, p);
     f3m_add
         ins5 (a1, a2, v1), // v1 == a1+a2
         ins6 (b1, b2, v2), // v2 == b1+b2
@@ -87,7 +114,7 @@ module f33m_mult(clk, reset, a, b, c, done);
     always @ (posedge clk)
       begin
         if (reset) K <= 7'b1000000;
-        else if (p) K <= {1'b0,K[6:1]};
+        else if (p|K[0]) K <= {1'b0,K[6:1]};
       end
     
     always @ (posedge clk)
@@ -119,6 +146,112 @@ module f33m_mult(clk, reset, a, b, c, done);
     always @ (posedge clk)
       begin
         delay2 <= delay1; delay1 <= reset;
+      end
+endmodule
+
+// c0 == a0*b0; c1 == a1*b1; c2 == a2*b2; all in GF(3^{3*M})
+module f33m_mult3(clk, reset, 
+                 a0, b0, c0,
+                 a1, b1, c1, 
+                 a2, b2, c2, 
+                 done);
+    input clk, reset;
+    input [`W3:0] a0, b0, a1, b1, a2, b2;
+    output reg [`W3:0] c0, c1, c2;
+    output reg done;
+    reg [3:0] K;
+    reg mult_reset, delay1, delay2;
+    wire e1, e2, e3, mult_done, delay3, rst;
+    wire [`W3:0] in1, in2, o;
+    
+    assign rst = delay2;
+    assign {e1,e2,e3} = K[3:1];
+
+    f33m_mux3
+        ins9 (a0, e1, a1, e2, a2, e3, in1),
+        ins10 (b0, e1, b1, e2, b2, e3, in2);
+    f33m_mult
+        ins11 (clk, mult_reset, in1, in2, o, mult_done); // o == in1 * in2
+    func6
+        ins12 (clk, reset, mult_done, delay3);
+
+    always @ (posedge clk)
+      begin
+        if (e1) c0 <= o;
+        if (e2) c1 <= o;
+        if (e3) c2 <= o;
+      end
+    
+    always @ (posedge clk)
+        if (reset) K <= 4'b1000;
+        else if (delay3|K[0]) K <= {1'b0,K[3:1]};
+    
+    always @ (posedge clk)
+      begin
+        if (rst) mult_reset <= 1;
+        else if (mult_done) mult_reset <= 1;
+        else mult_reset <= 0;
+      end
+
+    always @ (posedge clk)
+        if (reset)     done <= 0;
+        else if (K[0]) done <= 1;
+    
+    always @ (posedge clk)
+      begin 
+        delay2 <= delay1; delay1 <= reset; 
+      end
+endmodule
+
+// c0 == a0*b0; c1 == a1*b1; both in GF(3^{3*M})
+module f33m_mult2(clk, reset, 
+                 a0, b0, c0,
+                 a1, b1, c1, 
+                 done);
+    input clk, reset;
+    input [`W3:0] a0, b0, a1, b1;
+    output reg [`W3:0] c0, c1;
+    output reg done;
+    reg [2:0] K;
+    reg mult_reset, delay1, delay2;
+    wire e1, e2, mult_done, delay3, rst;
+    wire [`W3:0] in1, in2, o;
+    
+    assign rst = delay2;
+    assign {e1,e2} = K[2:1];
+
+    f33m_mux2
+        ins9 (a0, e1, a1, e2, in1),
+        ins10 (b0, e1, b1, e2, in2);
+    f33m_mult
+        ins11 (clk, mult_reset, in1, in2, o, mult_done); // o == in1 * in2
+    func6
+        ins12 (clk, reset, mult_done, delay3);
+
+    always @ (posedge clk)
+      begin
+        if (e1) c0 <= o;
+        if (e2) c1 <= o;
+      end
+    
+    always @ (posedge clk)
+        if (reset) K <= 3'b100;
+        else if (delay3|K[0]) K <= {1'b0,K[2:1]};
+    
+    always @ (posedge clk)
+      begin
+        if (rst) mult_reset <= 1;
+        else if (mult_done) mult_reset <= 1;
+        else mult_reset <= 0;
+      end
+
+    always @ (posedge clk)
+        if (reset)     done <= 0;
+        else if (K[0]) done <= 1;
+    
+    always @ (posedge clk)
+      begin 
+        delay2 <= delay1; delay1 <= reset; 
       end
 endmodule
 
@@ -182,13 +315,13 @@ module f33m_inv(clk, reset, a, c, done);
     f3m_inv
         ins16 (clk, rst3, v9, v10, done3); // v10 == v9^(-1)
     func6
-        ins17 (clk, done1, rst2),
-        ins18 (clk, done2, rst3),
-        ins19 (clk, done3, rst4);
+        ins17 (clk, reset, done1, rst2),
+        ins18 (clk, reset, done2, rst3),
+        ins19 (clk, reset, done3, rst4);
     
     always @ (posedge clk)
         if (reset) K <= 5'h10;
-        else if ((K[4]&rst2)|(K[3]&rst3)|(K[2]&rst4)|(K[1]&done4))
+        else if ((K[4]&rst2)|(K[3]&rst3)|(K[2]&rst4)|(K[1]&done4)|K[0])
             K <= K >> 1;
              
     always @ (posedge clk)
@@ -198,3 +331,4 @@ module f33m_inv(clk, reset, a, c, done);
             done <= 1; c <= {c2,c1,c0};
           end
 endmodule
+

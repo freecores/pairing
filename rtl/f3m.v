@@ -1,20 +1,6 @@
 `include "inc.v"
 `define MOST 2*`M+1:2*`M
 
-// out = (v1 & l1) | (v2 & l2)
-module f3m_mux2(v1, l1, v2, l2, out);
-    input [`WIDTH:0] v1, v2;
-    input l1, l2;
-    output [`WIDTH:0] out;
-    genvar i;
-    generate
-        for(i=0;i<=`WIDTH;i=i+1)
-          begin : label
-            assign out[i] = (v1[i] & l1) | (v2[i] & l2);
-          end 
-    endgenerate
-endmodule
-
 // out = (v1 & l1) | (v2 & l2) | (v3 & l3)
 module f3m_mux3(v1, l1, v2, l2, v3, l3, out);
     input [`WIDTH:0] v1, v2, v3;
@@ -114,8 +100,7 @@ module f3m_mult(clk, reset, A, B, C, done);
     reg [`WIDTH : 0] x, y, z;
     wire [`WIDTH : 0] z1, z2, z4;
     wire [`WIDTH+2 : 0] z3;
-    reg [`M+1 : 0] i;
-    wire [`M+1 : 0] i1;
+    reg [`M : 0] i;
     wire done1;
     wire [1:0] dummy;
 
@@ -126,14 +111,11 @@ module f3m_mult(clk, reset, A, B, C, done);
     assign z4 = {2'd0, y[`WIDTH:2]}; // z4 == y >> 2
     func3
         ins3 ({2'd0,x}, z3); // z3 == X*x mod p(x)
-    assign i1 = {1'b0, i[`M+1:1]}; // i1 == i >> 1
-    assign done1 = (i1[1:0] == 2'b01);
+    assign done1 = i[0];
     
     always @ (posedge clk)
         if (done1)
-          begin
             C <= z;
-          end
     
     always @ (posedge clk)
         if (reset)
@@ -145,11 +127,11 @@ module f3m_mult(clk, reset, A, B, C, done);
       begin
         if (reset)
           begin
-            x <= A; y <= B; z <= 0; i <= ~0;
+            x <= A; y <= B; z <= 0; i <= {1'b1,{`M{1'b0}}};
           end
         else
           begin
-            x <= z3[`WIDTH:0]; y <= z4; z <= z2; i <= i1;
+            x <= z3[`WIDTH:0]; y <= z4; z <= z2; i <= i >> 1;
           end
       end
 endmodule
@@ -178,7 +160,7 @@ module f3m_mult3(clk, reset,
     f3m_mult
         ins11 (clk, mult_reset, in1, in2, o, mult_done); // o == in1 * in2 in GF(3^m)
     func6
-        ins12 (clk, mult_done, delay3);
+        ins12 (clk, reset, mult_done, delay3);
 
     always @ (posedge clk)
       begin
@@ -189,7 +171,7 @@ module f3m_mult3(clk, reset,
     
     always @ (posedge clk)
         if (reset) K <= 4'b1000;
-        else if (delay3) K <= {1'b0,K[3:1]};
+        else if (delay3 | K[0]) K <= {1'b0,K[3:1]};
     
     always @ (posedge clk)
       begin
@@ -492,29 +474,20 @@ module f3m_inv(clk, reset, A, C, done);
 	output reg [`WIDTH:0] C;
     output reg done;
 	
-	reg [`WIDTH+2:0] S, R, U, V, d, i;
+	reg [`WIDTH+2:0] S, R, U, V, d;
+	reg [2*`M:0] i;
 	wire [1:0] q;
 	wire [`WIDTH+2:0] S1, S2,
 	                  R1,
 	                  U1, U2, U3,
 	                  V1, V2,
-	                  d1, d2,
-                      i1;
+	                  d1, d2;
 	wire don;
 
 	assign d1 = {d[`WIDTH+1:0], 1'b1}; // d1 == d+1
 	assign d2 = {1'b0, d[`WIDTH+2:1]}; // d2 == d-1
-    assign i1 = {1'b0, i[`WIDTH+2:1]}; // i1 == i-1
-	assign don = (i[2:1] == 2'b01);
+	assign don = i[0];
 	
-	always @ (posedge clk)
-        if (reset)
-            done <= 0;
-	    else if (don)
-          begin
-	        done <= 1; C <= U2[`WIDTH:0];
-          end
-
 	f3_mult 
 	    q1(S[`MOST], R[`MOST], q); // q = s_m / r_m
 	func1
@@ -531,11 +504,19 @@ module f3m_inv(clk, reset, A, C, done);
     func5
         ins8(U, U3); // U3 = (U/x) mod p
     
+	always @ (posedge clk)
+        if (reset)
+            done <= 0;
+	    else if (don)
+          begin
+	        done <= 1; C <= U2[`WIDTH:0];
+          end
+
     always @ (posedge clk) 
         if (reset)
-            i <= ~0;
+            i <= {1'b1, {(2*`M){1'b0}}};
         else
-            i <= i1;
+            i <= i >> 1;
     
     always @ (posedge clk)
         if (reset) 

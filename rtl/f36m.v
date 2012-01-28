@@ -35,7 +35,7 @@ module f36m_mult(clk, reset, a, b, c, done);
     f32m_mult
         ins3 (clk, mult_reset, in0, in1, o, mult_done); // o == in0 * in1
     func6
-        ins4 (clk, mult_done, p);
+        ins4 (clk, reset, mult_done, p);
     f32m_add
         ins5 (a1, a2, v1), // v1 == a1+a2
         ins6 (b1, b2, v2), // v2 == b1+b2
@@ -59,7 +59,7 @@ module f36m_mult(clk, reset, a, b, c, done);
     always @ (posedge clk)
       begin
         if (reset) K <= 7'b1000000;
-        else if (p) K <= {1'b0,K[6:1]};
+        else if (p | K[0]) K <= {1'b0,K[6:1]};
       end
     
     always @ (posedge clk)
@@ -116,4 +116,63 @@ module f36m_cubic(clk, a, c);
     
     always @ (posedge clk)
         c <= {c2,c1,c0};
+endmodule
+
+// c == a ^ { 3^{3*M} - 1 } in GF(3^{6M})
+module second_part(clk, reset, a, c, done);
+    input clk, reset;
+    input [`W6:0] a;
+    output reg [`W6:0] c;
+    output reg done;
+    
+    reg [3:0] K;
+    wire [`WIDTH:0] d0,d1,d2,d3,d4,d5,
+                    c0,c1,c2,c3,c4,c5;
+    wire [`W3:0] a0,a1,b0,b1,
+                 v1,v2,v3,v4,v5,v6,v7,v8,nv6;
+    wire [1:0] v9,v10;
+    wire rst1, rst2, rst3, done1, done2, done3;
+    
+    assign {d5,d4,d3,d2,d1,d0} = a;
+    assign {a1,a0} = {d5,d3,d1,d4,d2,d0}; // change basis
+    assign {b1,b0} = {{v8[`W3:2],v10}, {v7[`W3:2],v9}};
+    assign {c5,c3,c1,c4,c2,c0} = {b1,b0}; // change basis back
+    assign rst1 = reset;
+
+    f33m_mult2
+        ins1 (clk, rst1, 
+              a0, a0, v1, // v1 == a0^2
+              a1, a1, v2, // v2 == a1^2
+              done1);
+    f33m_add
+        ins2 (v1, v2, v3), // v3 == v1+v2 == a0^2+a1^2
+        ins3 (a0, a1, v5); // v5 == a0+a1
+    f33m_inv
+        ins4 (clk, rst2, v3, v4, done2); // v4 == v3^{-1} == (a0^2+a1^2)^{-1}
+    f33m_neg
+        ins5 (v6, nv6); // nv6 == -v6 == -(a0+a1)^2
+    f33m_mult3 // ****** $v8$ depends on $v6$ ******
+        ins6 (clk, rst3,
+              v5, v5, v6, // v6 == v5^2 == (a0+a1)^2
+              v2, v4, v7, // v7 == v2*v4 == (a1^2)*{(a0^2+a1^2)^{-1}}
+              nv6, v4, v8, // v8 == -v6*v4
+              done3);
+    f3_add1
+        ins7 (v7[1:0], v9), // v9 == v7[1:0]+1
+        ins8 (v8[1:0], v10); // v10 == v8[1:0]+1
+    func6
+        ins9  (clk, reset, done1, rst2),
+        ins10 (clk, reset, done2, rst3);
+
+    always @ (posedge clk)
+        if (reset) K <= 4'b1000;
+        else if ((K[3]&rst2)|(K[2]&rst3)|(K[1]&done3)|K[0])
+            K <= K >> 1;
+    
+    always @ (posedge clk)
+        if (reset) done <= 0;
+        else if (K[0])
+          begin
+            done <= 1; c <= {c5,c4,c3,c2,c1,c0};
+          end
 endmodule
