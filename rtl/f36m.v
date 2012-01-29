@@ -21,6 +21,7 @@ module f36m_mult(clk, reset, a, b, c, done);
     wire [`W2:0] in0, in1;
     wire [`W2:0] o;
     reg mult_reset, delay1, delay2;
+    reg [`W2:0] in0d,in1d;
 
     assign {e0,e1,e2,e3,e4,e5} = K[6:1];
     assign {a2,a1,a0} = a;
@@ -33,7 +34,7 @@ module f36m_mult(clk, reset, a, b, c, done);
         ins1 (a2,v1,a1,v3,v5,a0,e0,e1,e2,e3,e4,e5,in0), // $in0$ is the first input
         ins2 (b2,v2,b1,v4,v6,b0,e0,e1,e2,e3,e4,e5,in1); // $in1$ is the second input
     f32m_mult
-        ins3 (clk, mult_reset, in0, in1, o, mult_done); // o == in0 * in1
+        ins3 (clk, mult_reset, in0d, in1d, o, mult_done); // o == in0 * in1
     func6
         ins4 (clk, reset, mult_done, p);
     f32m_add
@@ -55,6 +56,11 @@ module f36m_mult(clk, reset, a, b, c, done);
         ins18 (d1, d3, d4, c1); // c1 == d1+d3+d4
     f32m_add4
         ins19 (x3, x2, nx0, nx5, d2); // d2 == x3+x2-x0-x5
+
+    always @ (posedge clk)
+      begin
+        in0d <= in0; in1d <= in1;
+      end
 
     always @ (posedge clk)
       begin

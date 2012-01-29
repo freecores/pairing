@@ -90,7 +90,7 @@ endmodule
 module tate_pairing(clk, reset, x1, y1, x2, y2, done, sel, out);
     input clk, reset;
     input [`WIDTH:0] x1, y1, x2, y2;
-    input [2:0] sel;
+    input [7:0] sel;
     output reg done;
     output reg [149:0] out;
     
@@ -127,15 +127,13 @@ module tate_pairing(clk, reset, x1, y1, x2, y2, done, sel, out);
         else if (K[0]) begin done <= 1; o <= out2; end
 
     always @ (o, sel)
-        case (sel)
-            3'd0: out = o[150-1:0];
-            3'd1: out = o[300-1:150];
-            3'd2: out = o[450-1:300];
-            3'd3: out = o[600-1:450];
-            3'd4: out = o[750-1:600];
-            3'd5: out = o[900-1:750];
-            3'd6: out = o[1050-1:900];
-            3'd7: out = o[`W6-1:1050];
-            default: out = 0;
-        endcase
+        out = (sel[0] ? o[150-1:0] : 0) |
+              (sel[1] ? o[300-1:150] : 0) |
+              (sel[2] ? o[450-1:300] : 0) |
+              (sel[3] ? o[600-1:450] : 0) |
+              (sel[4] ? o[750-1:600] : 0) |
+              (sel[5] ? o[900-1:750] : 0) |
+              (sel[6] ? o[1050-1:900] : 0) |
+              (sel[7] ? o[`W6-1:1050] : 0) ;
+
 endmodule
