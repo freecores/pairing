@@ -87,21 +87,16 @@ module duursma_lee_algo(clk, reset, xp, yp, xr, yr, done, out);
 endmodule
 
 // do Tate pairing, hahahaha
-module tate_pairing(clk, reset, x1, y1, x2, y2, done, sel, out);
+module tate_pairing(clk, reset, x1, y1, x2, y2, done, out);
     input clk, reset;
     input [`WIDTH:0] x1, y1, x2, y2;
-    input [7:0] sel;
     output reg done;
-    output reg [149:0] out;
+    output reg [`W6:0] out;
     
     reg delay1, rst1;
     wire done1, rst2;
     wire [`W6:0] out1, out2;
-    wire [149:0] tmp;
-    reg [`W6:0] o;
     reg [2:0] K;
-    
-    assign tmp = o[`W6:1050];
     
     duursma_lee_algo 
         ins1 (clk, rst1, x1, y1, x2, y2, done1, out1);
@@ -127,16 +122,6 @@ module tate_pairing(clk, reset, x1, y1, x2, y2, done, sel, out);
 
     always @ (posedge clk)
         if (reset) done <= 0;
-        else if (K[0]) begin done <= 1; o <= out2; end
-
-    always @ (o, sel, tmp)
-        out = (sel[0] ? o[150-1:0] : 0) |
-              (sel[1] ? o[300-1:150] : 0) |
-              (sel[2] ? o[450-1:300] : 0) |
-              (sel[3] ? o[600-1:450] : 0) |
-              (sel[4] ? o[750-1:600] : 0) |
-              (sel[5] ? o[900-1:750] : 0) |
-              (sel[6] ? o[1050-1:900] : 0) |
-              (sel[7] ? tmp : 0) ;
-
+        else if (K[0]) begin done <= 1; out <= out2; end
 endmodule
+

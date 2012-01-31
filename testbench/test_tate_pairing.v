@@ -7,13 +7,13 @@ module test_tate_pairing;
 	reg clk;
 	reg reset;
 	reg [`WIDTH:0] x1, y1, x2, y2;
-	reg [7:0] sel;
-    reg [149:0] o0,o1,o2,o3,o4,o5,o6,o7;
-    reg [`W6:0] wish;
 
 	// Outputs
 	wire done;
-	wire [149:0] out;
+	wire [`W6:0] out;
+
+    // Vars
+    reg [`W6:0] wish;
 
 	// Instantiate the Unit Under Test (UUT)
 	tate_pairing uut (
@@ -24,7 +24,6 @@ module test_tate_pairing;
 		.x2(x2), 
 		.y2(y2), 
 		.done(done), 
-		.sel(sel), 
 		.out(out)
 	);
 
@@ -36,15 +35,6 @@ module test_tate_pairing;
 		y1 = 0;
 		x2 = 0;
 		y2 = 0;
-		sel = 0;
-        o0 = 0;
-        o1 = 0;
-        o2 = 0;
-        o3 = 0;
-        o4 = 0;
-        o5 = 0;
-        o6 = 0;
-        o7 = 0;
 
 		// Wait 100 ns for global reset to finish
 		#100;
@@ -58,15 +48,7 @@ module test_tate_pairing;
         @ (negedge clk); reset = 1;
         @ (negedge clk); reset = 0;
         @ (posedge done); @ (negedge clk);
-        sel = 8'b0000_0001; #20; o0=out;
-        sel = 8'b0000_0010; #20; o1=out;
-        sel = 8'b0000_0100; #20; o2=out;
-        sel = 8'b0000_1000; #20; o3=out;
-        sel = 8'b0001_0000; #20; o4=out;
-        sel = 8'b0010_0000; #20; o5=out;
-        sel = 8'b0100_0000; #20; o6=out;
-        sel = 8'b1000_0000; #20; o7=out;
-        if ({o7[113:0],o6,o5,o4,o3,o2,o1,o0} !== wish) begin $display("E"); end
+        if (out !== wish) $display("E");
         $finish;
 	end
     
