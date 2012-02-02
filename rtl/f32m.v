@@ -1,3 +1,23 @@
+/*
+    Copyright 2011, City University of Hong Kong
+    Author is Homer (Dongsheng) Xing.
+
+    This file is part of Tate Bilinear Pairing Core.
+
+    Tate Bilinear Pairing Core is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Tate Bilinear Pairing Core is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see http://www.gnu.org/licenses/lgpl.txt
+*/
+
 `include "inc.v"
 
 // out = (v0 & l0) | (v1 & l1) | (v2 & l2) | ... | (v5 & l5)
