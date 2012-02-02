@@ -3,43 +3,43 @@
 
 module test_tate_pairing;
 
-	// Inputs
-	reg clk;
-	reg reset;
-	reg [`WIDTH:0] x1, y1, x2, y2;
+    // Inputs
+    reg clk;
+    reg reset;
+    reg [`WIDTH:0] x1, y1, x2, y2;
 
-	// Outputs
-	wire done;
-	wire [`W6:0] out;
+    // Outputs
+    wire done;
+    wire [`W6:0] out;
 
     // Vars
     reg [`W6:0] wish;
 
-	// Instantiate the Unit Under Test (UUT)
-	tate_pairing uut (
-		.clk(clk), 
-		.reset(reset), 
-		.x1(x1), 
-		.y1(y1), 
-		.x2(x2), 
-		.y2(y2), 
-		.done(done), 
-		.out(out)
-	);
+    // Instantiate the Unit Under Test (UUT)
+    tate_pairing uut (
+        .clk(clk), 
+        .reset(reset), 
+        .x1(x1), 
+        .y1(y1), 
+        .x2(x2), 
+        .y2(y2), 
+        .done(done), 
+        .out(out)
+    );
 
-	initial begin
-		// Initialize Inputs
-		clk = 0;
-		reset = 0;
-		x1 = 0;
-		y1 = 0;
-		x2 = 0;
-		y2 = 0;
+    initial begin
+        // Initialize Inputs
+        clk = 0;
+        reset = 0;
+        x1 = 0;
+        y1 = 0;
+        x2 = 0;
+        y2 = 0;
 
-		// Wait 100 ns for global reset to finish
-		#100;
+        // Wait 100 ns for global reset to finish
+        #100;
         
-		// Add stimulus here
+        // Add stimulus here
         x1 = 194'h6a18950064046a122a14118668466a262a91509688159890;
         y1 = 194'h69112569422aa0a25224aa010888066061124a8685566825;
         x2 = 194'h155945aa8924654812564110544995a28845901211454814;
@@ -50,7 +50,7 @@ module test_tate_pairing;
         @ (posedge done); @ (negedge clk);
         if (out !== wish) $display("E");
         $finish;
-	end
+    end
     
     always #5 clk = ~clk;
 endmodule

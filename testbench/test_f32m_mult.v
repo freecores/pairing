@@ -2,36 +2,36 @@
 
 module test_f32m_mult;
 
-	// Inputs
-	reg reset;
-	reg clk;
-	reg [387:0] a,b;
+    // Inputs
+    reg reset;
+    reg clk;
+    reg [387:0] a,b;
 
-	// Outputs
-	wire [387:0] c;
-	wire done;
+    // Outputs
+    wire [387:0] c;
+    wire done;
 
-	// Instantiate the Unit Under Test (UUT)
-	f32m_mult uut (
-		.reset(reset), 
-		.clk(clk), 
-		.a(a), 
-		.b(b), 
-		.c(c), 
-		.done(done)
-	);
+    // Instantiate the Unit Under Test (UUT)
+    f32m_mult uut (
+        .reset(reset), 
+        .clk(clk), 
+        .a(a), 
+        .b(b), 
+        .c(c), 
+        .done(done)
+    );
 
-	initial begin
-		// Initialize Inputs
-		reset = 0;
-		clk = 0;
-		a = 0;
-		b = 0;
+    initial begin
+        // Initialize Inputs
+        reset = 0;
+        clk = 0;
+        a = 0;
+        b = 0;
 
-		// Wait 100 ns for global reset to finish
-		#100;
+        // Wait 100 ns for global reset to finish
+        #100;
         
-		// Add stimulus here
+        // Add stimulus here
         a={194'h2a8aa25aa245066106a40806618aa88a2946881162a864652,194'h28258889288590a464559a0854a0a269820495a6069969aa2};
         b={194'h59a0a46891951042640592a2969888012108059214504048,194'h55812555968918122622106514a25488204895614889112};
         @ (negedge clk) reset = 1;
@@ -49,7 +49,7 @@ module test_f32m_mult;
         #100;
         
         $finish;
-	end
+    end
     
     always #5 clk = ~clk;
 endmodule

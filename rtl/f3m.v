@@ -464,48 +464,48 @@ endmodule
 
 // inversion in GF(3^m). C = A^(-1)
 module f3m_inv(clk, reset, A, C, done);
-	input [`WIDTH:0] A;
-	input clk;
-	input reset;
-	output reg [`WIDTH:0] C;
+    input [`WIDTH:0] A;
+    input clk;
+    input reset;
+    output reg [`WIDTH:0] C;
     output reg done;
-	
-	reg [`WIDTH+2:0] S, R, U, V, d;
-	reg [2*`M:0] i;
-	wire [1:0] q;
-	wire [`WIDTH+2:0] S1, S2,
-	                  R1,
-	                  U1, U2, U3,
-	                  V1, V2,
-	                  d1, d2;
-	wire don;
+    
+    reg [`WIDTH+2:0] S, R, U, V, d;
+    reg [2*`M:0] i;
+    wire [1:0] q;
+    wire [`WIDTH+2:0] S1, S2,
+                      R1,
+                      U1, U2, U3,
+                      V1, V2,
+                      d1, d2;
+    wire don;
 
-	assign d1 = {d[`WIDTH+1:0], 1'b1}; // d1 == d+1
-	assign d2 = {1'b0, d[`WIDTH+2:1]}; // d2 == d-1
-	assign don = i[0];
-	
-	f3_mult 
-	    q1(S[`MOST], R[`MOST], q); // q = s_m / r_m
-	func1
-	    ins1(S, R, q, S1), // S1 = S - q*R
-	    ins2(V, U, q, V1); // V1 = V - q*U
-	func2
-	    ins3(S1, S2), // S2 = x*S1 = x*(S-q*R)
-	    ins4(R, R1); // R1 = x*R
-	func3
-	    ins5(U, U1), // U1 = x*U mod p
-	    ins6(V1, V2); // V2 = x*V1 mod p = x*(V-qU) mod p
+    assign d1 = {d[`WIDTH+1:0], 1'b1}; // d1 == d+1
+    assign d2 = {1'b0, d[`WIDTH+2:1]}; // d2 == d-1
+    assign don = i[0];
+    
+    f3_mult 
+        q1(S[`MOST], R[`MOST], q); // q = s_m / r_m
+    func1
+        ins1(S, R, q, S1), // S1 = S - q*R
+        ins2(V, U, q, V1); // V1 = V - q*U
+    func2
+        ins3(S1, S2), // S2 = x*S1 = x*(S-q*R)
+        ins4(R, R1); // R1 = x*R
+    func3
+        ins5(U, U1), // U1 = x*U mod p
+        ins6(V1, V2); // V2 = x*V1 mod p = x*(V-qU) mod p
     func4
         ins7(U, R[`MOST], U2); // U2 = U/r_m
     func5
         ins8(U, U3); // U3 = (U/x) mod p
     
-	always @ (posedge clk)
+    always @ (posedge clk)
         if (reset)
             done <= 0;
-	    else if (don)
+        else if (don)
           begin
-	        done <= 1; C <= U2[`WIDTH:0];
+            done <= 1; C <= U2[`WIDTH:0];
           end
 
     always @ (posedge clk) 

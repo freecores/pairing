@@ -3,43 +3,43 @@
 
 module test_duursma_lee_algo;
 
-	// Inputs
-	reg clk;
-	reg reset;
-	reg [`WIDTH:0] xp,yp,xr,yr;
+    // Inputs
+    reg clk;
+    reg reset;
+    reg [`WIDTH:0] xp,yp,xr,yr;
 
-	// Outputs
-	wire done;
+    // Outputs
+    wire done;
     wire [`W6:0] out;
     wire [`WIDTH:0] o0,o1,o2,o3,o4,o5;
 
-	// Instantiate the Unit Under Test (UUT)
-	duursma_lee_algo uut (
-		.clk(clk), 
-		.reset(reset), 
-		.xp(xp), 
-		.yp(yp), 
-		.xr(xr), 
-		.yr(yr), 
-		.done(done), 
-		.out(out)
-	);
+    // Instantiate the Unit Under Test (UUT)
+    duursma_lee_algo uut (
+        .clk(clk), 
+        .reset(reset), 
+        .xp(xp), 
+        .yp(yp), 
+        .xr(xr), 
+        .yr(yr), 
+        .done(done), 
+        .out(out)
+    );
     
     assign {o5,o4,o3,o2,o1,o0} = out;
 
-	initial begin
-		// Initialize Inputs
-		clk = 0;
-		reset = 0;
-		xp = 0;
-		yp = 0;
-		xr = 0;
-		yr = 0;
+    initial begin
+        // Initialize Inputs
+        clk = 0;
+        reset = 0;
+        xp = 0;
+        yp = 0;
+        xr = 0;
+        yr = 0;
 
-		// Wait 100 ns for global reset to finish
-		#100;
+        // Wait 100 ns for global reset to finish
+        #100;
 
-		// Add stimulus here
+        // Add stimulus here
         xp = 194'haa5a8129a02a0544a4409a500045458901280969815aa820;
         yp = 194'h1414a205a21a4428968985650895464402249258428049204;
         xr = 194'h614011499522506668a01a20988812468a5aa8641aa24595;
@@ -60,7 +60,7 @@ module test_duursma_lee_algo;
           end
         #100;
         $finish;
-	end
+    end
     
     always #5 clk = ~clk;
 endmodule

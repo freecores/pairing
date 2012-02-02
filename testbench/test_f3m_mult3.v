@@ -3,46 +3,46 @@
 
 module test_f3m_mult3;
 
-	// Inputs
-	reg clk;
-	reg reset;
-	reg [`WIDTH:0] a0,b0,a1,b1,a2,b2,w0,w1,w2;
+    // Inputs
+    reg clk;
+    reg reset;
+    reg [`WIDTH:0] a0,b0,a1,b1,a2,b2,w0,w1,w2;
 
-	// Outputs
+    // Outputs
     wire [`WIDTH:0] c0,c1,c2;
-	wire done;
+    wire done;
 
-	// Instantiate the Unit Under Test (UUT)
-	f3m_mult3 uut (
-		.clk(clk), 
-		.reset(reset), 
-		.a0(a0), 
-		.b0(b0), 
-		.c0(c0), 
-		.a1(a1), 
-		.b1(b1), 
-		.c1(c1), 
-		.a2(a2), 
-		.b2(b2), 
-		.c2(c2), 
-		.done(done)
-	);
+    // Instantiate the Unit Under Test (UUT)
+    f3m_mult3 uut (
+        .clk(clk), 
+        .reset(reset), 
+        .a0(a0), 
+        .b0(b0), 
+        .c0(c0), 
+        .a1(a1), 
+        .b1(b1), 
+        .c1(c1), 
+        .a2(a2), 
+        .b2(b2), 
+        .c2(c2), 
+        .done(done)
+    );
 
-	initial begin
-		// Initialize Inputs
-		clk = 0;
-		reset = 0;
-		a0 = 0;
-		b0 = 0;
-		a1 = 0;
-		b1 = 0;
-		a2 = 0;
-		b2 = 0;
+    initial begin
+        // Initialize Inputs
+        clk = 0;
+        reset = 0;
+        a0 = 0;
+        b0 = 0;
+        a1 = 0;
+        b1 = 0;
+        a2 = 0;
+        b2 = 0;
 
-		// Wait 100 ns for global reset to finish
-		#100;
+        // Wait 100 ns for global reset to finish
+        #100;
         
-		// Add stimulus here
+        // Add stimulus here
         a0 = 194'h2581921511a6952a4244918a069446a520480660152916412;
         a1 = 194'haa59080a98122082111a110a400642169102154006590a28;
         a2 = 194'h90026a06416441992252a2820a2860269a094a0a06428285;
@@ -60,7 +60,7 @@ module test_f3m_mult3;
         if (c1 !== w1) $display("E");
         if (c2 !== w2) $display("E");
         $finish;
-	end
+    end
 
     always #5 clk = ~clk;
 endmodule
