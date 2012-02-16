@@ -39,7 +39,7 @@ module duursma_lee_algo(clk, reset, xp, yp, xr, yr, done, out);
     wire [`WIDTH:0] mu /* my name is "mew" */,nmu,ny,
                     x,v2,v3,v4,v5,v6;
     wire [1:0] v9;
-    wire f36m_reset, dummy, f3m_done, f36m_done, finish;
+    wire f36m_reset, dummy, f3m_done, f36m_done, finish, change;
     
     assign g = {`ZERO,`TWO,`ZERO,nmu,v6,v5};
     assign finish = i[0];
@@ -114,7 +114,7 @@ module tate_pairing(clk, reset, x1, y1, x2, y2, done, out);
     output reg [`W6:0] out;
     
     reg delay1, rst1;
-    wire done1, rst2;
+    wire done1, rst2, done2;
     wire [`W6:0] out1, out2;
     reg [2:0] K;
     
